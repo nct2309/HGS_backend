@@ -9,6 +9,7 @@ import (
 	usecase "go-jwt/internal/usecase"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,9 +46,12 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 	{
 		userRoutes.Use(middleware.CORS())
 		userRoutes.GET("/:id", userController.get)
-		userRoutes.GET("/turnOnLight", userController.turnOnLight)
-		userRoutes.GET("/turnOffLight", userController.turnOffLight)
-		userRoutes.POST("/updateTempAndHumid", userController.updateTempAndHumid)
+		userRoutes.POST("/turnOnLight", userController.turnOnLight)
+		userRoutes.POST("/turnOffLight", userController.turnOffLight)
+		userRoutes.POST("/turnOnFan", userController.turnOnFan)
+		userRoutes.POST("/turnOffFan", userController.turnOffFan)
+		userRoutes.POST("/updateFanSpeed", userController.updateFanSpeed)
+		userRoutes.GET("/getTempAndHumid", userController.getTempAndHumid)
 	}
 }
 
@@ -123,8 +127,13 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 func (h UserController) get(ctx *gin.Context) {
 
 	request := h.NewUserRequest()
-
-	user, err := h.userService.GetUser(ctx, request.GetIDFromURL(ctx))
+	id, err := strconv.Atoi(request.GetIDFromURL(ctx))
+	if err != nil {
+		fmt.Println("get user failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get failed", "error": err.Error()})
+		return
+	}
+	user, err := h.userService.GetUser(id)
 
 	if err != nil {
 		fmt.Println("get user failed:", err.Error())
@@ -296,8 +305,27 @@ func (h UserController) turnOffLight(ctx *gin.Context) {
 	fmt.Println("Response body:", string(body))
 }
 
-func (h UserController) updateTempAndHumid(ctx *gin.Context) {
-	// Read request body
+func (h UserController) getTempAndHumid(ctx *gin.Context) {
+	// request := h.NewUserRequest()
+	// house_id, err := strconv.Atoi(request.GetHouseIDFromURL(ctx))
+	// if err != nil {
+	// 	fmt.Println("get user failed:", err.Error())
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{"message": "get failed", "error": err.Error()})
+	// 	return
+	// }
+	temperature, humid, err := h.userService.GetTempAndHumid(1)
+
+	if err != nil {
+		fmt.Println("get temperature and humidity failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get temperature and humidity failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"temperature": temperature, "humidity": humid})
+}
+
+func (h UserController) updateFanSpeed(ctx *gin.Context) {
+
 	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
@@ -312,25 +340,168 @@ func (h UserController) updateTempAndHumid(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse JSON"})
 		return
 	}
-
-	// Extract "humid" and "temp" values from the JSON
-	humid, ok := data["humid"].(float64)
+	// Extract "fan_speed" values from the JSON
+	fan_speed, ok := data["fan_speed"].(float64)
 	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing 'humid' value"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing 'fan_speed' value"})
+		return
+	}
+	// username := "your_username"
+	// apiKey := "your_api_key"
+
+	// Build the API endpoint URL
+	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/GDfmkBYDyWBUV6A6M17stLHytSEM"
+	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
+
+	// Create the data you want to send
+	jsonData := map[string]string{
+		"value": strconv.FormatFloat(fan_speed, 'f', -1, 64),
+	}
+
+	// Convert JSON data to bytes
+	jsonDataBytes, err := json.Marshal(jsonData)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
 		return
 	}
 
-	temp, ok := data["temp"].(float64)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing 'temp' value"})
+	// Create a new HTTP client
+	client := &http.Client{}
+
+	// Create a POST request with the JSON data
+	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
+	if err != nil {
+		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	// Now you can use 'humid' and 'temp' in your application logic
-	fmt.Println("Humidity:", humid)
-	fmt.Println("Temperature:", temp)
+	// Set the request headers
+	req.Header.Set("Content-Type", "application/json")
 
-	// Respond with success message
-	ctx.JSON(http.StatusOK, gin.H{"message": "Temperature and humidity updated successfully"})
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
 
+	defer resp.Body.Close()
+
+	// Read the response body
+	bodyResponse, err1 := io.ReadAll(resp.Body)
+	if err1 != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+
+	// Print the response body
+	fmt.Println("Response body:", string(bodyResponse))
+}
+
+func (h UserController) turnOnFan(ctx *gin.Context) {
+
+	// username := "your_username"
+	// apiKey := "your_api_key"
+
+	// Build the API endpoint URL
+	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
+	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
+
+	// Create the data you want to send
+	jsonData := map[string]string{
+		"value": "Fan On",
+	}
+
+	// Convert JSON data to bytes
+	jsonDataBytes, err := json.Marshal(jsonData)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return
+	}
+
+	// Create a new HTTP client
+	client := &http.Client{}
+
+	// Create a POST request with the JSON data
+	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	// Set the request headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	// Read the response body
+	bodyResponse, err1 := io.ReadAll(resp.Body)
+	if err1 != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+
+	// Print the response body
+	fmt.Println("Response body:", string(bodyResponse))
+}
+
+func (h UserController) turnOffFan(ctx *gin.Context) {
+
+	// username := "your_username"
+	// apiKey := "your_api_key"
+
+	// Build the API endpoint URL
+	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
+	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
+
+	// Create the data you want to send
+	jsonData := map[string]string{
+		"value": "Fan Off",
+	}
+
+	// Convert JSON data to bytes
+	jsonDataBytes, err := json.Marshal(jsonData)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return
+	}
+
+	// Create a new HTTP client
+	client := &http.Client{}
+
+	// Create a POST request with the JSON data
+	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	// Set the request headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	// Read the response body
+	bodyResponse, err1 := io.ReadAll(resp.Body)
+	if err1 != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+
+	// Print the response body
+	fmt.Println("Response body:", string(bodyResponse))
 }

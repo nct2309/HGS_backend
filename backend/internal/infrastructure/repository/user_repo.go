@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 	entity "go-jwt/internal/entity"
-	"strconv"
 
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *entity.User) (*entity.User, error)
-	GetUserByID(ctx context.Context, id string) (*entity.User, error)
-	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
+	GetUserByID(id int) (*entity.User, error)
+	GetUserByUsername(username string) (*entity.User, error)
 	UpdateUser(ctx context.Context, id string, data *entity.User) (*entity.User, error)
 	DeleteUser(ctx context.Context, id string) error
+	GetTempAndHumid(house_id int) (float64, float64, error)
 }
 
 type userRepository struct {
@@ -36,17 +36,10 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, user *entity.Use
 	return nil, nil
 }
 
-func (userRepo *userRepository) GetUserByID(ctx context.Context, id string) (*entity.User, error) {
+func (userRepo *userRepository) GetUserByID(id int) (*entity.User, error) {
 	user := entity.User{}
 
-	// convert string id to number ID
-	ID, er := strconv.Atoi(id)
-	if er != nil {
-		// handle error if the conversion fails
-		return nil, er
-	}
-
-	err := userRepo.db.Table("Users").Where("User_id = ?", ID).First(&user).Error
+	err := userRepo.db.Table("Users").Where("User_id = ?", id).First(&user).Error
 
 	if err != nil {
 		fmt.Print("Error", err)
@@ -55,15 +48,17 @@ func (userRepo *userRepository) GetUserByID(ctx context.Context, id string) (*en
 	return &user, nil
 }
 
-func (userRepo *userRepository) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
-	// user := entity.User{}
-	// err := userRepo.db.Where("username = ?", username).First(&user).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return &user, nil
-	return nil, nil
+func (userRepo *userRepository) GetUserByUsername(username string) (*entity.User, error) {
+	user := entity.User{}
 
+	err := userRepo.db.Table("Users").Where("Username = ?", username).First(&user).Error
+
+	if err != nil {
+		fmt.Print("Error", err)
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func (userRepo *userRepository) UpdateUser(ctx context.Context, id string, data *entity.User) (*entity.User, error) {
@@ -82,4 +77,18 @@ func (userRepo *userRepository) DeleteUser(ctx context.Context, id string) error
 	// }
 	// return nil
 	return nil
+}
+
+func (userRepo *userRepository) GetTempAndHumid(house_id int) (float64, float64, error) {
+	var temp float64
+	var humid float64
+	err := userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Temperature").Select("Current_data").Scan(&temp).Error
+	if err != nil {
+		return 0, 0, err
+	}
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Humidity").Select("Current_data").Scan(&humid).Error
+	if err != nil {
+		return 0, 0, err
+	}
+	return temp, humid, nil
 }

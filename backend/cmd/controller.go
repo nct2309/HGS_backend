@@ -20,12 +20,15 @@ func (s server) SetupControllers() {
 
 	// init repository
 	userRepo := repository.NewUserRepo(db)
+	deviceRepo := repository.NewDeviceRepo(db)
 
 	// init usecase
 	userUsecase := usecase.NewUserUsecase(userRepo)
+	deviceUsecase := usecase.NewDeviceUsecase(deviceRepo)
 
 	// init controller
 	controller.SetupUserRoutes(s.router, userUsecase)
+	controller.SetupDeviceRoutes(s.router, deviceUsecase)
 }
 
 func (s server) CloseSqlServerDB() {
