@@ -44,6 +44,7 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		userRoutes.GET("/getTempAndHumid", userController.getTempAndHumid)
 		userRoutes.GET("/getHouseSetting", userController.getHouseSettingByHouseID)
 		userRoutes.GET("/getSetOfHouseSetting", userController.getSetOfHouseSetting)
+		userRoutes.GET("/getActivityLog", userController.getActivityLogByHouseID)
 	}
 }
 
@@ -125,6 +126,12 @@ func (h UserController) get(ctx *gin.Context) {
 
 func (h UserController) turnOnLight(ctx *gin.Context) {
 
+	e := h.userService.UpdataDeviceState(16, true, 1, "Setting1")
+	if e != nil {
+		fmt.Println("Error updating device state:", e)
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Error updating device state", "error": e.Error()})
+	}
+
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/Ye9oEbz9VvPgzjLYzjz7dDC8R1dL"
 
@@ -174,6 +181,12 @@ func (h UserController) turnOnLight(ctx *gin.Context) {
 }
 
 func (h UserController) turnOffLight(ctx *gin.Context) {
+
+	e := h.userService.UpdataDeviceState(16, false, 1, "Setting1")
+	if e != nil {
+		fmt.Println("Error updating device state:", e)
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Error updating device state", "error": e.Error()})
+	}
 
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/Ye9oEbz9VvPgzjLYzjz7dDC8R1dL"
@@ -259,6 +272,12 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 		return
 	}
 
+	e := h.userService.UpdateDeviceData(8, fan_speed, 1, "Setting1")
+	if e != nil {
+		fmt.Println("Error updating device data:", e)
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Error updating device data", "error": e.Error()})
+	}
+
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/GDfmkBYDyWBUV6A6M17stLHytSEM"
 
@@ -309,6 +328,12 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 
 func (h UserController) turnOnFan(ctx *gin.Context) {
 
+	e := h.userService.UpdataDeviceState(8, true, 1, "Setting1")
+	if e != nil {
+		fmt.Println("Error updating device state:", e)
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Error updating device state", "error": e.Error()})
+	}
+
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
 
@@ -358,6 +383,12 @@ func (h UserController) turnOnFan(ctx *gin.Context) {
 }
 
 func (h UserController) turnOffFan(ctx *gin.Context) {
+
+	e := h.userService.UpdataDeviceState(8, false, 1, "Setting1")
+	if e != nil {
+		fmt.Println("Error updating device state:", e)
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Error updating device state", "error": e.Error()})
+	}
 
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
@@ -436,4 +467,20 @@ func (h UserController) getSetOfHouseSetting(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, set)
+}
+
+// /users/getActivityLog?house_id=1
+func (h UserController) getActivityLogByHouseID(ctx *gin.Context) {
+	request := h.NewUserRequest()
+	house_id := request.GetHouseIDFromURL(ctx)
+
+	activityLog, err := h.userService.GetActivityLogByHouseID(house_id)
+
+	if err != nil {
+		fmt.Println("get activity log failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get activity log failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, activityLog)
 }

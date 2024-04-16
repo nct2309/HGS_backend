@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	ERR_USER_NOT_FOUND          = errors.New("User not found")
-	ERR_USER_PASSWORD_NOT_MATCH = errors.New("Password not match")
+	ErrUserNotFound         = errors.New("user not found")
+	ErrUserPasswordNotMatch = errors.New("password not match")
 )
 
 type User struct {

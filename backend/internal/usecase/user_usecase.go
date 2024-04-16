@@ -5,6 +5,7 @@ import (
 	repository "go-jwt/internal/infrastructure/repository"
 	"go-jwt/internal/token"
 	"strconv"
+	"strings"
 )
 
 func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
@@ -22,6 +23,9 @@ type UserUsecase interface {
 	GetTempAndHumid(house_id int) (float64, float64, error)
 	GetHouseSettingByHouseID(house_id int) ([]entity.HouseSetting, error)
 	GetSetOfHouseSetting(house_id int, settingName string) ([]entity.Set, error)
+	GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error)
+	UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error
+	UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error
 }
 
 type userUsecase struct {
@@ -50,12 +54,13 @@ func (s *userUsecase) GetTempAndHumid(house_id int) (float64, float64, error) {
 
 func (s *userUsecase) AuthenticateUser(username string, password string) (*entity.User, string, []int, error) {
 	user, err := s.userRepo.GetUserByUsername(username)
+
 	if err != nil {
 		return nil, "", nil, err
 	}
 
 	if user == nil {
-		return nil, "", nil, entity.ERR_USER_NOT_FOUND
+		return nil, "", nil, entity.ErrUserNotFound
 	}
 	//skip Verify package: we can use hashed for pw
 	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password),bcrypt.DefaultCost)
@@ -65,7 +70,7 @@ func (s *userUsecase) AuthenticateUser(username string, password string) (*entit
 	// }
 
 	if user.Password != password {
-		return nil, "", nil, entity.ERR_USER_PASSWORD_NOT_MATCH
+		return nil, "", nil, entity.ErrUserPasswordNotMatch
 	}
 
 	token, err := token.GenerateToken(user.Username + strconv.Itoa(user.ID) + user.Password)
@@ -80,6 +85,9 @@ func (s *userUsecase) AuthenticateUser(username string, password string) (*entit
 		return nil, "", nil, err
 	}
 
+	// Change all the character in password of user to * at the same length
+	user.Password = strings.Repeat("*", len(user.Password))
+
 	return user, token, house_ids, nil
 }
 
@@ -89,4 +97,16 @@ func (s *userUsecase) GetHouseSettingByHouseID(house_id int) ([]entity.HouseSett
 
 func (s *userUsecase) GetSetOfHouseSetting(house_id int, settingName string) ([]entity.Set, error) {
 	return s.userRepo.GetSetOfHouseSetting(house_id, settingName)
+}
+
+func (s *userUsecase) GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error) {
+	return s.userRepo.GetActivityLogByHouseID(house_id)
+}
+
+func (s *userUsecase) UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error {
+	return s.userRepo.UpdateDeviceData(deviceID, data, house_id, setting)
+}
+
+func (s *userUsecase) UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error {
+	return s.userRepo.UpdataDeviceState(deviceID, state, house_id, setting)
 }

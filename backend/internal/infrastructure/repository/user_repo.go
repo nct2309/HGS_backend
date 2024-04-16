@@ -14,8 +14,10 @@ type UserRepository interface {
 	GetHouseID(userID int) ([]int, error)
 	GetHouseSettingByHouseID(house_id int) ([]entity.HouseSetting, error)
 	GetSetOfHouseSetting(house_id int, settingName string) ([]entity.Set, error)
+	GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error)
+	UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error
+	UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error
 }
-
 type userRepository struct {
 	db *gorm.DB
 }
@@ -99,13 +101,14 @@ func (userRepo *userRepository) GetHouseID(userID int) ([]int, error) {
 // 	Selected bool `gorm:"selected" json:"selected"`
 //   }
 
-//   type Set struct {
-// 	Device_id int `gorm:"primaryKey;foreignKey:Device_id" json:"device_id"`
-// 	House_id int `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
-// 	Name string `gorm:"primaryKey;foreignKey:Name" json:"name"`
-// 	Device_data int `gorm:"Device_data" json:"device_data"`
-// 	Device_state string `gorm:"Device_state" json:"device_state"`
-//   }
+// type Set struct {
+// 	Device_id    int    `gorm:"primaryKey;foreignKey:Device_id" json:"device_id"`
+// 	Device_name  string `gorm:"Device_name" json:"device_name"` // this not in the Set table of the database but is needed for frontend
+// 	House_id     int    `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
+// 	Name         string `gorm:"primaryKey;foreignKey:Name" json:"name"`
+// 	Device_data  int    `gorm:"Device_data" json:"device_data"`
+// 	Device_state bool `gorm:"Device_state" json:"device_state"`
+// }
 
 func (userRepo *userRepository) GetHouseSettingByHouseID(house_id int) ([]entity.HouseSetting, error) {
 	var houseSettings []entity.HouseSetting
@@ -118,9 +121,67 @@ func (userRepo *userRepository) GetHouseSettingByHouseID(house_id int) ([]entity
 
 func (userRepo *userRepository) GetSetOfHouseSetting(house_id int, settingName string) ([]entity.Set, error) {
 	var sets []entity.Set
-	err := userRepo.db.Table("Set").Where("House_id = ? and Name = ?", house_id, settingName).Find(&sets).Error
+	// get all the set of a house setting which join table set to device
+	// err := userRepo.db.Table("Set").Where("House_id = ? and Name = ?", house_id, settingName).Find(&sets).Error
+	// err := userRepo.db.Table("Set").Where("House_id = ? and Name = ?", house_id, settingName).Joins("JOIN Iot_device ON Set.Device_id = Iot_device.Device_id").Find(&sets).Error
+	// Find all the set of a house setting which join table set to device and get the Name in Iot_device as device_name
+	err := userRepo.db.Table("Set").Where("\"Set\".House_id = ? and \"Set\".Name = ?", house_id, settingName).Joins("JOIN Iot_device ON \"Set\".Device_id = Iot_device.Device_id").Select("\"Set\".*, Iot_device.Name as Device_name").Find(&sets).Error
 	if err != nil {
 		return nil, err
 	}
 	return sets, nil
+}
+
+// type Device struct {
+// 	ID       int    `gorm:"primaryKey;column:Device_id" json:"device_id"`
+// 	Type     string `gorm:"Device_type" json:"device_type"`
+// 	Name     string `gorm:"Name" json:"name"`
+// 	Data     int    `gorm:"Device_data" json:"device_data"`
+// 	House_id int    `gorm:"foreignKey:House_id" json:"house_id"`
+// }
+
+// type ActivityLog struct {
+// 	ID          int       `gorm:"primaryKey;column:Activity_id" json:"activity_id"`
+// 	House_id    int       `gorm:"foreignKey:House_id" json:"house_id"`
+// 	Time        time.Time `gorm:"Time" json:"time"`
+// 	Device      string    `gorm:"Device" json:"device"`
+// 	TypeOfEvent string    `gorm:"Type_of_event" json:"type_of_event"`
+// }
+
+func (userRepo *userRepository) GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error) {
+	var activityLogs []entity.ActivityLog
+	err := userRepo.db.Table("Activity_log").Where("House_id = ?", house_id).Find(&activityLogs).Error
+	if err != nil {
+		return nil, err
+	}
+	return activityLogs, nil
+}
+
+//	type DataRecord struct {
+//		Device_id    int       `gorm:"primaryKey;foreignKey:Device_id" json:"device_id"`
+//		Time         time.Time `gorm:"primaryKey;column:Date_and_time" json:"time"`
+//		Device_data  float64       `gorm:"Device_data" json:"device_data"`
+//		Device_state bool    `gorm:"Device_state" json:"device_state"`
+//	}
+func (userRepo *userRepository) UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error {
+	err := userRepo.db.Table("Set").Where("House_id = ? and Name = ? and Device_id = ?", house_id, setting, deviceID).Update("Device_data", data).Error
+	if err != nil {
+		return err
+	}
+	// update in Iot_device table
+	err = userRepo.db.Table("Iot_device").Where("Device_id = ?", deviceID).Update("Current_data", data).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userRepo *userRepository) UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error {
+	err := userRepo.db.Table("Set").Where("House_id = ? and Name = ? and Device_id = ?", house_id, setting, deviceID).Update("Device_state", state).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

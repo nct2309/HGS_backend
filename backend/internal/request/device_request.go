@@ -1,6 +1,7 @@
 package request
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -33,17 +34,23 @@ func (r *deviceRequest) GetDataFromDeviceRequest(ctx *gin.Context) (int, int, st
 	data, _ := strconv.ParseFloat(Data, 64)
 	state, _ := strconv.ParseBool(State)
 
-	// if deviceType == "Door" {
+	if data < 0 {
+		return 0, 0, "", 0, false, errors.New("data cannot be negative")
+	}
 
-	// } else if deviceType == "Temperature" {
+	if deviceType == "Door" {
 
-	// } else if deviceType == "Humidity" {
+	} else if deviceType == "Temperature" {
 
-	// } else if deviceType == "Fan" {
+	} else if deviceType == "Humidity" {
 
-	// } else if deviceType == "Light" {
+	} else if deviceType == "Fan" {
+		if data > 100 {
+			return 0, 0, "", 0, false, errors.New("fan speed cannot be more than 100")
+		}
+		// } else if deviceType == "Light" {
 
-	// }
-
+		// }
+	}
 	return houseID, deviceID, deviceType, data, state, nil
 }
