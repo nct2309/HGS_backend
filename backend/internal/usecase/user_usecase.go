@@ -21,6 +21,7 @@ type UserUsecase interface {
 	// DeleteUser(ctx context.Context, id string) error
 	AuthenticateUser(username string, password string) (*entity.User, string, []int, error)
 	GetTempAndHumid(house_id int) (float64, float64, error)
+	GetDashboardData(house_id int) (float64, float64, float64, float64, error)
 	GetHouseSettingByHouseID(house_id int) ([]entity.HouseSetting, error)
 	GetSetOfHouseSetting(house_id int, settingName string) ([]entity.Set, error)
 	GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error)
@@ -109,4 +110,8 @@ func (s *userUsecase) UpdateDeviceData(deviceID int, data float64, house_id int,
 
 func (s *userUsecase) UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error {
 	return s.userRepo.UpdataDeviceState(deviceID, state, house_id, setting)
+}
+
+func (s *userUsecase) GetDashboardData(house_id int) (float64, float64, float64, float64, error) {
+	return s.userRepo.GetDashboardData(house_id)
 }

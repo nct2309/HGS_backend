@@ -17,6 +17,7 @@ type UserRepository interface {
 	GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error)
 	UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error
 	UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error
+	GetDashboardData(house_id int) (float64, float64, float64, float64, error)
 }
 type userRepository struct {
 	db *gorm.DB
@@ -65,6 +66,30 @@ func (userRepo *userRepository) GetTempAndHumid(house_id int) (float64, float64,
 		return 0, 0, err
 	}
 	return temp, humid, nil
+}
+
+func (userRepo *userRepository) GetDashboardData(house_id int) (float64, float64, float64, float64, error) {
+	var temp float64
+	var humid float64
+	var light float64
+	var fan_speed float64
+	err := userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Temperature").Select("Current_data").Scan(&temp).Error
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Humidity").Select("Current_data").Scan(&humid).Error
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Light").Select("Current_data").Scan(&light).Error
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Fan").Select("Current_data").Scan(&fan_speed).Error
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	return temp, humid, light, fan_speed, nil
 }
 
 //	type User struct {

@@ -42,6 +42,7 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		userRoutes.POST("/turnOffFan", userController.turnOffFan)
 		userRoutes.POST("/updateFanSpeed", userController.updateFanSpeed)
 		userRoutes.GET("/getTempAndHumid", userController.getTempAndHumid)
+		userRoutes.GET("/getDashboardData", userController.getDashboardData)
 		userRoutes.GET("/getHouseSetting", userController.getHouseSettingByHouseID)
 		userRoutes.GET("/getSetOfHouseSetting", userController.getSetOfHouseSetting)
 		userRoutes.GET("/getActivityLog", userController.getActivityLogByHouseID)
@@ -247,6 +248,18 @@ func (h UserController) getTempAndHumid(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"temperature": temperature, "humidity": humid})
+}
+
+func (h UserController) getDashboardData(ctx *gin.Context) {
+
+	temperature, humid, light, fan_speed, err := h.userService.GetDashboardData(1)
+	if err != nil {
+		fmt.Println("get dashboard data failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get dashboard data failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"temperature": temperature, "humidity": humid, "light": light, "fan_speed": fan_speed})
 }
 
 func (h UserController) updateFanSpeed(ctx *gin.Context) {
