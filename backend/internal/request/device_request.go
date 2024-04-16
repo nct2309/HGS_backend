@@ -1,7 +1,7 @@
 package request
 
 import (
-	"go-jwt/internal/entity"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,18 +11,39 @@ func NewDeviceRequest() DeviceRequest {
 }
 
 type DeviceRequest interface {
-	Bind(c *gin.Context) error
-	GetIDFromURL(c *gin.Context) string
+	GetDataFromDeviceRequest(c *gin.Context) (int, int, string, float64, bool, error)
 }
 
 type deviceRequest struct {
-	user entity.User
 }
 
-func (r *deviceRequest) Bind(c *gin.Context) error {
-	return c.ShouldBindJSON(&r.user)
-}
+//api route: /devices/update?house_id=1&device_id=2&device_type=Door&data=30&state=1
 
-func (r *deviceRequest) GetIDFromURL(c *gin.Context) string {
-	return c.Param("id")
+func (r *deviceRequest) GetDataFromDeviceRequest(ctx *gin.Context) (int, int, string, float64, bool, error) {
+	// read the request url to extract the query parameters
+	HouseID, _ := ctx.GetQuery("house_id")
+	DeviceID, _ := ctx.GetQuery("device_id")
+	deviceType, _ := ctx.GetQuery("device_type")
+	Data, _ := ctx.GetQuery("data")
+	State, _ := ctx.GetQuery("state")
+
+	// convert the query parameters to the desired data type
+	houseID, _ := strconv.Atoi(HouseID)
+	deviceID, _ := strconv.Atoi(DeviceID)
+	data, _ := strconv.ParseFloat(Data, 64)
+	state, _ := strconv.ParseBool(State)
+
+	// if deviceType == "Door" {
+
+	// } else if deviceType == "Temperature" {
+
+	// } else if deviceType == "Humidity" {
+
+	// } else if deviceType == "Fan" {
+
+	// } else if deviceType == "Light" {
+
+	// }
+
+	return houseID, deviceID, deviceType, data, state, nil
 }

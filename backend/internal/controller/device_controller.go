@@ -28,6 +28,7 @@ func SetupDeviceRoutes(router *gin.Engine, deviceService usecase.DeviceUsecase) 
 		deviceRoutes.POST("/updateTemperature", deviceController.UpdateTemperature)
 		deviceRoutes.POST("/updateHumidity", deviceController.UpdateHumidity)
 		deviceRoutes.POST("/updateFanSpeed", deviceController.UpdateFanSpeed)
+		deviceRoutes.GET("/update", deviceController.UpdateDevice)
 	}
 }
 
@@ -132,4 +133,22 @@ func (h DeviceController) UpdateFanSpeed(ctx *gin.Context) {
 
 	// Respond with success message
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan speed updated successfully"})
+}
+
+func (h DeviceController) UpdateDevice(ctx *gin.Context) {
+	// Extract the query parameters from the request
+	houseID, deviceID, deviceType, data, state, err := h.NewDeviceRequest().GetDataFromDeviceRequest(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse query parameters"})
+		return
+	}
+
+	// Update the device
+	if err := h.deviceService.UpdateDevice(houseID, deviceID, deviceType, data, state); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update device"})
+		return
+	}
+
+	// Respond with success message
+	ctx.JSON(http.StatusOK, gin.H{"message": "Device updated successfully"})
 }

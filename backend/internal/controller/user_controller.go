@@ -25,24 +25,14 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		NewUserRequest: request.NewUserRequest,
 	}
 
-	// publicRoutes := router.Group("/public")
-	// {
-	// 	publicRoutes.Use(middleware.CORS())
-	// 	publicRoutes.POST("/login", userController.login)
-	// 	publicRoutes.POST("/", userController.create)
-	// }
+	publicRoutes := router.Group("/public")
+	{
+		publicRoutes.Use(middleware.CORS())
+		publicRoutes.POST("/login", userController.login)
+		// publicRoutes.POST("/", userController.create)
+	}
 
-	// userRoutes := router.Group("/users").Use(middleware.JwtAuthMiddleware())
-	// {
-	// 	userRoutes.Use(middleware.CORS())
-	// 	userRoutes.POST("/", userController.create)
-	// 	userRoutes.GET("/:id", userController.get)
-	// 	userRoutes.PUT("/:id", userController.update)
-	// 	userRoutes.DELETE("/:id", userController.delete)
-	// 	//userRoutes.POST("/login", userController.login)
-	// 	userRoutes.GET("/currentuser", getCurrentUserID)
-	// }
-	userRoutes := router.Group("/users")
+	userRoutes := router.Group("/users").Use(middleware.JwtAuthMiddleware())
 	{
 		userRoutes.Use(middleware.CORS())
 		userRoutes.GET("/:id", userController.get)
@@ -52,77 +42,31 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		userRoutes.POST("/turnOffFan", userController.turnOffFan)
 		userRoutes.POST("/updateFanSpeed", userController.updateFanSpeed)
 		userRoutes.GET("/getTempAndHumid", userController.getTempAndHumid)
+		userRoutes.GET("/getHouseSetting", userController.getHouseSettingByHouseID)
+		userRoutes.GET("/getSetOfHouseSetting", userController.getSetOfHouseSetting)
 	}
 }
 
-// func getCurrentUserID(c *gin.Context) {
-// 	userID, err := token.ExtractTokenID(c)
+func (h UserController) login(ctx *gin.Context) {
+	request := h.NewUserRequest()
 
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	if err := request.Bind(ctx); err != nil {
+		fmt.Println("bind user failed:", err.Error())
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 
-// 	c.JSON(http.StatusOK, gin.H{"message": "success", "ID": userID})
-// }
+	user, token, house_ids, err := h.userService.AuthenticateUser(request.GetUsername(), request.GetPassword())
 
-// func (h UserController) login(ctx *gin.Context) {
-// 	request := h.NewUserRequest()
+	if err != nil {
+		fmt.Println("login user failed:", err.Error())
+		// 404 not found http status code
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "login failed", "error": err.Error()})
+		return
+	}
 
-// 	if err := request.Bind(ctx); err != nil {
-// 		fmt.Println("bind user failed:", err.Error())
-// 		ctx.AbortWithError(http.StatusBadRequest, err)
-// 		return
-// 	}
-
-// 	user, token, err := h.userService.AuthenticateUser(ctx, request.GetUsername(), request.GetPassword())
-
-// 	if err != nil {
-// 		fmt.Println("login user failed:", err.Error())
-// 		// ctx.AbortWithError(http.StatusBadRequest, err)
-// 		// 404 not found http status code
-// 		ctx.JSON(http.StatusNotFound, gin.H{"message": "login failed", "error": err.Error()})
-// 		return
-// 	}
-
-// 	ctx.JSON(http.StatusOK, gin.H{"token": token, "user": user})
-// }
-// func (h UserController) create(ctx *gin.Context) {
-// 	request := h.NewUserRequest()
-
-// 	if err := request.Bind(ctx); err != nil {
-// 		fmt.Println("bind user failed:", err.Error())
-// 		ctx.AbortWithError(http.StatusBadRequest, err)
-// 		return
-// 	}
-
-// 	// if err := request.Validate(); err != nil {
-// 	// 	fmt.Println("validate user failed", err.Error())
-// 	// 	ctx.AbortWithError(http.StatusBadRequest, err)
-// 	// 	return
-// 	// }
-
-// 	user, error := h.userService.CreateUser(ctx, &entity.User{
-// 		Username:      request.GetUsername(),
-// 		Password:      request.GetPassword(),
-// 		Name:          request.GetName(),
-// 		Phonenum:      request.GetPhonenum(),
-// 		Age:           request.GetAge(),
-// 		Gender:        request.GetGender(),
-// 		SSN:           request.GetSSN(),
-// 		Role:          request.GetRole(),
-// 		CountFine:     request.GetCountFine(),
-// 		ReservingList: request.GetReservingList(),
-// 		BorrowingList: request.GetBorrowingList(),
-// 		BorrowedList:  request.GetBorrowedList(),
-// 	})
-// 	if error != nil {
-// 		fmt.Println("create user failed:", error.Error())
-// 		// ctx.AbortWithError(http.StatusBadRequest, error)
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "create failed", "error": error.Error()})
-// 	}
-// 	ctx.JSON(http.StatusOK, user)
-// }
+	ctx.JSON(http.StatusOK, gin.H{"token": token, "user": user, "house_ids": house_ids})
+}
 
 func (h UserController) get(ctx *gin.Context) {
 
@@ -179,32 +123,10 @@ func (h UserController) get(ctx *gin.Context) {
 // 	ctx.JSON(http.StatusOK, user)
 // }
 
-// func (h UserController) delete(ctx *gin.Context) {
-// 	request := h.NewUserRequest()
-
-// 	err := h.userService.DeleteUser(ctx, request.GetIDFromURL(ctx))
-
-// 	if err != nil {
-// 		fmt.Println("delete user failed:", err.Error())
-// 		ctx.AbortWithError(http.StatusBadRequest, err)
-// 		return
-// 	}
-
-// 	ctx.JSON(http.StatusOK, gin.H{"message": "user deleted"})
-// }
-
-// func (h UserController) get(ctx *gin.Context) {
-// 	ctx.JSON(http.StatusOK, gin.H{"message": "user deleted"})
-// }
-
 func (h UserController) turnOnLight(ctx *gin.Context) {
-
-	// username := "your_username"
-	// apiKey := "your_api_key"
 
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/Ye9oEbz9VvPgzjLYzjz7dDC8R1dL"
-	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
 
 	jsonData := map[string]string{
 		"value": "Alarm On",
@@ -253,12 +175,8 @@ func (h UserController) turnOnLight(ctx *gin.Context) {
 
 func (h UserController) turnOffLight(ctx *gin.Context) {
 
-	// username := "your_username"
-	// apiKey := "your_api_key"
-
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/Ye9oEbz9VvPgzjLYzjz7dDC8R1dL"
-	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
 
 	// Create the data you want to send
 	jsonData := map[string]string{
@@ -306,13 +224,7 @@ func (h UserController) turnOffLight(ctx *gin.Context) {
 }
 
 func (h UserController) getTempAndHumid(ctx *gin.Context) {
-	// request := h.NewUserRequest()
-	// house_id, err := strconv.Atoi(request.GetHouseIDFromURL(ctx))
-	// if err != nil {
-	// 	fmt.Println("get user failed:", err.Error())
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{"message": "get failed", "error": err.Error()})
-	// 	return
-	// }
+
 	temperature, humid, err := h.userService.GetTempAndHumid(1)
 
 	if err != nil {
@@ -346,12 +258,9 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing 'fan_speed' value"})
 		return
 	}
-	// username := "your_username"
-	// apiKey := "your_api_key"
 
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/GDfmkBYDyWBUV6A6M17stLHytSEM"
-	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
 
 	// Create the data you want to send
 	jsonData := map[string]string{
@@ -400,12 +309,8 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 
 func (h UserController) turnOnFan(ctx *gin.Context) {
 
-	// username := "your_username"
-	// apiKey := "your_api_key"
-
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
-	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
 
 	// Create the data you want to send
 	jsonData := map[string]string{
@@ -454,12 +359,8 @@ func (h UserController) turnOnFan(ctx *gin.Context) {
 
 func (h UserController) turnOffFan(ctx *gin.Context) {
 
-	// username := "your_username"
-	// apiKey := "your_api_key"
-
 	// Build the API endpoint URL
 	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
-	// url := fmt.Sprintf("%s?X-ADAFRUIT-IO-KEY=%s", baseURL, apiKey)
 
 	// Create the data you want to send
 	jsonData := map[string]string{
@@ -504,4 +405,35 @@ func (h UserController) turnOffFan(ctx *gin.Context) {
 
 	// Print the response body
 	fmt.Println("Response body:", string(bodyResponse))
+}
+
+func (h UserController) getHouseSettingByHouseID(ctx *gin.Context) {
+	request := h.NewUserRequest()
+	house_id := request.GetHouseIDFromURL(ctx)
+
+	houseSetting, err := h.userService.GetHouseSettingByHouseID(house_id)
+
+	if err != nil {
+		fmt.Println("get house setting failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get house setting failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, houseSetting)
+}
+
+func (h UserController) getSetOfHouseSetting(ctx *gin.Context) {
+	request := h.NewUserRequest()
+	house_id := request.GetHouseIDFromURL(ctx)
+	settingName := request.GetHouseSettingNameFromURL(ctx)
+
+	set, err := h.userService.GetSetOfHouseSetting(house_id, settingName)
+
+	if err != nil {
+		fmt.Println("get set of house setting failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get set of house setting failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, set)
 }

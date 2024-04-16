@@ -18,8 +18,8 @@ type User struct {
 
 // Combination of User and House id is primary key for Own table and the foreign key for House table
 type Own struct { // More descriptive name
-	UserID  int `gorm:"primary_key;foreignKey:UserID"`
-	HouseID int `gorm:"primary_key;foreignKey:HouseID"`
+	UserID  int `gorm:"primary_key;foreignKey:User_id"`
+	HouseID int `gorm:"primary_key;foreignKey:House_id"`
 }
 
 type Notification struct {

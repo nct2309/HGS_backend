@@ -22,3 +22,18 @@ type FaceEncoding struct {
 }
 
 //Set and house setting???
+
+type HouseSetting struct {
+  // combination of Name and House_id is primary key
+  Name string `gorm:"primaryKey;column:Name" json:"name"`
+  House_id int `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
+  Selected bool `gorm:"selected" json:"selected"`
+}
+
+type Set struct {
+  Device_id int `gorm:"primaryKey;foreignKey:Device_id" json:"device_id"`
+  House_id int `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
+  Name string `gorm:"primaryKey;foreignKey:Name" json:"name"`
+  Device_data int `gorm:"Device_data" json:"device_data"`
+  Device_state string `gorm:"Device_state" json:"device_state"`
+}
