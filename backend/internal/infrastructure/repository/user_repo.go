@@ -69,26 +69,29 @@ func (userRepo *userRepository) GetTempAndHumid(house_id int) (float64, float64,
 }
 
 func (userRepo *userRepository) GetDashboardData(house_id int) (float64, float64, float64, float64, error) {
+	// Using Device_id to ordering the output but finally take only Current_data, if select only Current_data, it order by Current_data
 	var temp float64
 	var humid float64
 	var light float64
 	var fan_speed float64
-	err := userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Temperature").Select("Current_data").Scan(&temp).Error
+	// use LIMIT 1 to get the first row
+	err := userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Temperature").Select("Current_data").Order("Device_id").Limit(1).Scan(&temp).Error
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Humidity").Select("Current_data").Scan(&humid).Error
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Humidity").Select("Current_data").Order("Device_id").Limit(1).Scan(&humid).Error
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Light").Select("Current_data").Scan(&light).Error
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Light").Select("Current_data").Order("Device_id").Limit(1).Scan(&light).Error
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Fan").Select("Current_data").Scan(&fan_speed).Error
+	err = userRepo.db.Table("Iot_device").Where("House_id = ? and Device_type = ?", house_id, "Fan").Select("Current_data").Order("Device_id").Limit(1).Scan(&fan_speed).Error
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
+
 	return temp, humid, light, fan_speed, nil
 }
 
