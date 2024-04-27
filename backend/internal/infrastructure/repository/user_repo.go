@@ -18,6 +18,8 @@ type UserRepository interface {
 	UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error
 	UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error
 	GetDashboardData(house_id int) (float64, float64, float64, float64, error)
+	UpdateSet(deviceID int, data float64, state bool, house_id int, setting string) error
+	UpdateManySets([]entity.Set) error
 }
 type userRepository struct {
 	db *gorm.DB
@@ -211,5 +213,45 @@ func (userRepo *userRepository) UpdataDeviceState(deviceID int, state bool, hous
 		return err
 	}
 
+	return nil
+}
+
+// a func combine two above
+func (userRepo *userRepository) UpdateSet(deviceID int, data float64, state bool, house_id int, setting string) error {
+	// transaction
+	tx := userRepo.db.Begin()
+	err := tx.Table("Set").Where("House_id = ? and Name = ? and Device_id = ?", house_id, setting, deviceID).Update("Device_data", data).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Table("Set").Where("House_id = ? and Name = ? and Device_id = ?", house_id, setting, deviceID).Update("Device_state", state).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (userRepo *userRepository) UpdateManySets(sets []entity.Set) error {
+	// transaction
+	tx := userRepo.db.Begin()
+	for _, set := range sets {
+
+		// Update data and state in one sql statement
+		err := tx.Table("Set").Where("House_id = ? and Name = ? and Device_id = ?", set.House_id, set.Name, set.Device_id).Updates(map[string]interface{}{"Device_data": set.Device_data, "Device_state": set.Device_state}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	err := tx.Commit().Error
+	if err != nil {
+		return err
+	}
 	return nil
 }

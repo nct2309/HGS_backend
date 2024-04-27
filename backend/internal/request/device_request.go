@@ -41,7 +41,9 @@ func (r *deviceRequest) GetDataFromDeviceRequest(ctx *gin.Context) (int, int, st
 	if deviceType == "Door" {
 
 	} else if deviceType == "Temperature" {
-
+		if data > 100 {
+			return 0, 0, "", 0, false, errors.New("fire detected! temperature cannot be more than 100")
+		}
 	} else if deviceType == "Humidity" {
 
 	} else if deviceType == "Fan" {

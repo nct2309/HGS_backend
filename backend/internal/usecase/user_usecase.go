@@ -27,6 +27,7 @@ type UserUsecase interface {
 	GetActivityLogByHouseID(house_id int) ([]entity.ActivityLog, error)
 	UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error
 	UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error
+	UpdateManySets([]entity.Set) error
 }
 
 type userUsecase struct {
@@ -114,4 +115,10 @@ func (s *userUsecase) UpdataDeviceState(deviceID int, state bool, house_id int, 
 
 func (s *userUsecase) GetDashboardData(house_id int) (float64, float64, float64, float64, error) {
 	return s.userRepo.GetDashboardData(house_id)
+}
+
+func (s *userUsecase) UpdateManySets(sets []entity.Set) error {
+	// loop through the sets and update each set
+	s.userRepo.UpdateManySets(sets)
+	return nil
 }

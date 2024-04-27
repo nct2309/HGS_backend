@@ -8,11 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GenerateToken(userID string) (string, error) {
+func GenerateToken(username string) (string, error) {
 
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
-	claims["user_id"] = userID
+	claims["user_id"] = username
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	return token.SignedString([]byte("yoursecretstring"))
@@ -23,7 +23,7 @@ func TokenValid(c *gin.Context) error {
 	tokenString := ExtractToken(c)
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte("yoursecretstring"), nil
 	})
@@ -53,7 +53,7 @@ func ExtractTokenID(c *gin.Context) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Check the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		// Provide the secret key for validation
 		return []byte("yoursecretstring"), nil
@@ -74,5 +74,5 @@ func ExtractTokenID(c *gin.Context) (string, error) {
 	}
 
 	// Return an error if the token is not valid
-	return "", fmt.Errorf("Invalid token")
+	return "", fmt.Errorf("invalid token")
 }
