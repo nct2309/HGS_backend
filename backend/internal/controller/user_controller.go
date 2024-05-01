@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"go-jwt/internal/entity"
@@ -37,6 +36,7 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 	{
 		userRoutes.Use(middleware.CORS())
 		userRoutes.GET("/:id", userController.get)
+		// devices
 		userRoutes.POST("/turnOnLight", userController.turnOnLight)
 		userRoutes.POST("/turnOffLight", userController.turnOffLight)
 		userRoutes.POST("/updateLightLevel", userController.updateLightLevel)
@@ -44,6 +44,9 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		userRoutes.POST("/turnOffFan", userController.turnOffFan)
 		userRoutes.POST("/updateFanSpeed", userController.updateFanSpeed)
 		userRoutes.GET("/getDashboardData", userController.getDashboardData)
+		userRoutes.POST("/openDoor", userController.openDoor)
+		userRoutes.POST("/closeDoor", userController.closeDoor)
+		// some of the user's house setting
 		userRoutes.GET("/getHouseSetting", userController.getHouseSettingByHouseID)
 		userRoutes.GET("/getSetOfHouseSetting", userController.getSetOfHouseSetting)
 		userRoutes.GET("/getActivityLog", userController.getActivityLogByHouseID)
@@ -102,44 +105,12 @@ func (h UserController) turnOnLight(ctx *gin.Context) {
 		"value": "Alarm On",
 	}
 
-	// Convert JSON data to bytes
-	jsonDataBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
-
-	// Create a new HTTP client
-	client := &http.Client{}
-
-	// Create a POST request with the JSON data
-	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-
-	// Print the response status code and body
-	fmt.Println("Response body:", string(body))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Light turned on successfully"})
 }
@@ -154,76 +125,23 @@ func (h UserController) turnOffLight(ctx *gin.Context) {
 		"value": "Alarm Off",
 	}
 
-	// Convert JSON data to bytes
-	jsonDataBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
-
-	// Create a new HTTP client
-	client := &http.Client{}
-
-	// Create a POST request with the JSON data
-	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-
-	// Print the response body
-	fmt.Println("Response body:", string(body))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Light turned off successfully"})
 }
 
 func (h UserController) updateLightLevel(ctx *gin.Context) {
+	request := h.NewUserRequest()
 
-	body, err := io.ReadAll(ctx.Request.Body)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
-		return
-	}
+	light_level, e := request.GetFanSpeed(ctx)
 
-	// Define struct to unmarshal JSON into
-	var data map[string]interface{}
-
-	// Unmarshal JSON into the struct
-	if err := json.Unmarshal(body, &data); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse JSON"})
-		return
-	}
-
-	// Extract "light_level" values from the JSON
-	light_level, ok := data["light_level"].(float64)
-
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing 'light_level' value"})
-		return
-	}
-
-	// light_level has to be in 1, 2, 3 and 4.
-	if !(light_level == 1 || light_level == 2 || light_level == 3 || light_level == 4) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'light_level' value. Must be 1, 2, 3 or 4"})
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
 
@@ -234,75 +152,22 @@ func (h UserController) updateLightLevel(ctx *gin.Context) {
 		"value": strconv.FormatFloat(light_level, 'f', -1, 64),
 	}
 
-	// Convert JSON data to bytes
-	jsonDataBytes, err := json.Marshal(jsonData)
+	e = request.SendDataToAdafruit(baseURL, jsonData)
 
-	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
-
-	// Create a new HTTP client
-	client := &http.Client{}
-
-	// Create a POST request with the JSON data
-	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	// Read the response body
-	bodyResponse, err1 := io.ReadAll(resp.Body)
-	if err1 != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-
-	// Print the response body
-	fmt.Println("Response body:", string(bodyResponse))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Light level updated successfully"})
 }
 
 func (h UserController) updateFanSpeed(ctx *gin.Context) {
+	request := h.NewUserRequest()
+	fan_speed, e := request.GetFanSpeed(ctx)
 
-	body, err := io.ReadAll(ctx.Request.Body)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
-		return
-	}
-
-	// Define struct to unmarshal JSON into
-	var data map[string]interface{}
-
-	// Unmarshal JSON into the struct
-	if err := json.Unmarshal(body, &data); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse JSON"})
-		return
-	}
-	// Extract "fan_speed" values from the JSON
-	fan_speed, ok := data["fan_speed"].(float64)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing 'fan_speed' value"})
-		return
-	}
-
-	// fan_speed has to be between 0 and 100
-	if fan_speed < 0 || fan_speed > 100 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'fan_speed' value. Must be between 0 and 100"})
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
 
@@ -314,44 +179,12 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 		"value": strconv.FormatFloat(fan_speed, 'f', -1, 64),
 	}
 
-	// Convert JSON data to bytes
-	jsonDataBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+	e = request.SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
-
-	// Create a new HTTP client
-	client := &http.Client{}
-
-	// Create a POST request with the JSON data
-	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	// Read the response body
-	bodyResponse, err1 := io.ReadAll(resp.Body)
-	if err1 != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-
-	// Print the response body
-	fmt.Println("Response body:", string(bodyResponse))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan speed updated successfully"})
 }
@@ -366,44 +199,12 @@ func (h UserController) turnOnFan(ctx *gin.Context) {
 		"value": "Fan On",
 	}
 
-	// Convert JSON data to bytes
-	jsonDataBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
-
-	// Create a new HTTP client
-	client := &http.Client{}
-
-	// Create a POST request with the JSON data
-	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	// Read the response body
-	bodyResponse, err1 := io.ReadAll(resp.Body)
-	if err1 != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-
-	// Print the response body
-	fmt.Println("Response body:", string(bodyResponse))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan turned on successfully"})
 }
@@ -418,46 +219,54 @@ func (h UserController) turnOffFan(ctx *gin.Context) {
 		"value": "Fan Off",
 	}
 
-	// Convert JSON data to bytes
-	jsonDataBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
-
-	// Create a new HTTP client
-	client := &http.Client{}
-
-	// Create a POST request with the JSON data
-	req, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewReader(jsonDataBytes))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	// Read the response body
-	bodyResponse, err1 := io.ReadAll(resp.Body)
-	if err1 != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
-
-	// Print the response body
-	fmt.Println("Response body:", string(bodyResponse))
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan turned off successfully"})
+}
+
+func (h UserController) openDoor(ctx *gin.Context) {
+
+	// Build the API endpoint URL
+	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/iMQFZUbNRJPM5ZCzRN4ped6GbL4W"
+
+	// Create the data you want to send
+	jsonData := map[string]string{
+		"value": "Open Door",
+	}
+
+	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Door opened successfully"})
+}
+
+func (h UserController) closeDoor(ctx *gin.Context) {
+
+	// Build the API endpoint URL
+	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/iMQFZUbNRJPM5ZCzRN4ped6GbL4W"
+
+	// Create the data you want to send
+	jsonData := map[string]string{
+		"value": "Close Door",
+	}
+
+	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
+
+	if e != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Door closed successfully"})
 }
 
 func (h UserController) getDashboardData(ctx *gin.Context) {

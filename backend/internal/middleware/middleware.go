@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	token "go-jwt/internal/token"
+	token "go-jwt/internal/middleware/token"
 
 	"github.com/gin-gonic/gin"
 )

@@ -3,7 +3,7 @@ package usecase
 import (
 	entity "go-jwt/internal/entity"
 	repository "go-jwt/internal/infrastructure/repository"
-	"go-jwt/internal/token"
+	"go-jwt/internal/middleware/token"
 	"strconv"
 	"strings"
 )
@@ -48,10 +48,6 @@ func (s *userUsecase) GetTempAndHumid(house_id int) (float64, float64, error) {
 
 // func (s *userUsecase) UpdateUser(ctx context.Context, id string, data *entity.User) (*entity.User, error) {
 // 	return s.userRepo.UpdateUser(ctx, id, data)
-// }
-
-// func (s *userUsecase) DeleteUser(ctx context.Context, id string) error {
-// 	return s.userRepo.DeleteUser(ctx, id)
 // }
 
 func (s *userUsecase) AuthenticateUser(username string, password string) (*entity.User, string, []int, error) {
