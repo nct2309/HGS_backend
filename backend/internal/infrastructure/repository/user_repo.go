@@ -20,6 +20,10 @@ type UserRepository interface {
 	GetDashboardData(house_id int) (float64, float64, float64, float64, error)
 	UpdateSet(deviceID int, data float64, state bool, house_id int, setting string) error
 	UpdateManySets([]entity.Set) error
+	GetAllNotifications(userID int) ([]entity.Notification, error)
+	GetUnreadNotifications(userID int) ([]entity.Notification, error)
+	CreateNotification(userID int, houseID int, notification *entity.Notification) error
+	CreateActivityLog(activityLog *entity.ActivityLog) error
 }
 type userRepository struct {
 	db *gorm.DB
@@ -250,6 +254,76 @@ func (userRepo *userRepository) UpdateManySets(sets []entity.Set) error {
 		}
 	}
 	err := tx.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (userRepo *userRepository) GetAllNotifications(userID int) ([]entity.Notification, error) {
+	var notifications []entity.Notification
+	err := userRepo.db.Table("Send").Where("User_id = ?", userID).Joins("JOIN Notification ON \"Send\".Notification_id = Notification.Notification_id").Find(&notifications).Error
+	if err != nil {
+		return nil, err
+	}
+	return notifications, nil
+}
+
+func (userRepo *userRepository) GetUnreadNotifications(userID int) ([]entity.Notification, error) {
+	var notifications []entity.Notification
+	err := userRepo.db.Table("Send").Where("User_id = ? and Read = ?", userID, false).Joins("JOIN Notification ON \"Send\".Notification_id = Notification.Notification_id").Find(&notifications).Error
+	if err != nil {
+		return nil, err
+	}
+	return notifications, nil
+}
+
+// type Notification struct {
+// 	ID          int       `gorm:"primaryKey;column:Notification_id" json:"notification_id"`
+// 	Description string    `gorm:"Description" json:"description"`
+// 	Time        time.Time `gorm:"Time" json:"time"` //3/25/2024 5:06:00 PM
+// 	Title       string    `gorm:"Title" json:"title"`
+// 	Read        bool      `gorm:"Read" json:"read"`
+// }
+
+// type Send struct {
+// 	Notification_id int `gorm:"primaryKey;foreignKey:Notification_id" json:"notification_id"`
+// 	User_id         int `gorm:"primaryKey;foreignKey:User_id" json:"user_id"`
+// 	House_id        int `gorm:"foreignkey:House_id" json:"house_id"`
+// }
+
+func (userRepo *userRepository) CreateNotification(userID int, houseID int, notification *entity.Notification) error {
+	// transaction
+	tx := userRepo.db.Begin()
+	// Create notification in Notification table
+	err := tx.Table("Notification").Create(notification).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	// get the id of the notification just created to insert into Send
+	err = tx.Table("Send").Create(&entity.Send{Notification_id: notification.ID, User_id: userID, House_id: houseID}).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// type ActivityLog struct {
+// 	ID            int       `gorm:"primaryKey;column:Activity_id" json:"activity_id"`
+// 	House_id      int       `gorm:"foreignKey:House_id" json:"house_id"`
+// 	Time          time.Time `gorm:"Time" json:"time"`
+// 	Device        string    `gorm:"Device" json:"device"`
+// 	Type_of_event string    `gorm:"Type_of_event" json:"type_of_event"`
+// }
+
+func (userRepo *userRepository) CreateActivityLog(activityLog *entity.ActivityLog) error {
+	err := userRepo.db.Table("Activity_log").Create(activityLog).Error
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,6 +52,9 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		userRoutes.GET("/getSetOfHouseSetting", userController.getSetOfHouseSetting)
 		userRoutes.GET("/getActivityLog", userController.getActivityLogByHouseID)
 		userRoutes.POST("/updateSets", userController.updateSets)
+		// notifications
+		userRoutes.GET("/getAllNotifications", userController.geAlltNotifications)
+		userRoutes.GET("/getUnreadNotifications", userController.getUnreadNotifications)
 	}
 }
 
@@ -112,6 +116,13 @@ func (h UserController) turnOnLight(ctx *gin.Context) {
 		return
 	}
 
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Light",
+		Time:          time.Now(),
+		Type_of_event: "Turn on the light",
+	})
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Light turned on successfully"})
 }
 
@@ -132,13 +143,20 @@ func (h UserController) turnOffLight(ctx *gin.Context) {
 		return
 	}
 
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Light",
+		Time:          time.Now(),
+		Type_of_event: "Turn off the light",
+	})
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Light turned off successfully"})
 }
 
 func (h UserController) updateLightLevel(ctx *gin.Context) {
 	request := h.NewUserRequest()
 
-	light_level, e := request.GetFanSpeed(ctx)
+	light_level, e := request.GetLightLevel(ctx)
 
 	if e != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
@@ -158,6 +176,13 @@ func (h UserController) updateLightLevel(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
+
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Light",
+		Time:          time.Now(),
+		Type_of_event: "Update the light level to " + strconv.FormatFloat(light_level, 'f', -1, 64),
+	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Light level updated successfully"})
 }
@@ -186,6 +211,13 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 		return
 	}
 
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Fan",
+		Time:          time.Now(),
+		Type_of_event: "Update the fan speed to " + strconv.FormatFloat(fan_speed, 'f', -1, 64),
+	})
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan speed updated successfully"})
 }
 
@@ -205,6 +237,13 @@ func (h UserController) turnOnFan(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
+
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Fan",
+		Time:          time.Now(),
+		Type_of_event: "Turn on the fan",
+	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan turned on successfully"})
 }
@@ -226,6 +265,13 @@ func (h UserController) turnOffFan(ctx *gin.Context) {
 		return
 	}
 
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Fan",
+		Time:          time.Now(),
+		Type_of_event: "Turn off the fan",
+	})
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Fan turned off successfully"})
 }
 
@@ -246,6 +292,13 @@ func (h UserController) openDoor(ctx *gin.Context) {
 		return
 	}
 
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Door",
+		Time:          time.Now(),
+		Type_of_event: "Open the door",
+	})
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Door opened successfully"})
 }
 
@@ -265,6 +318,13 @@ func (h UserController) closeDoor(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
 		return
 	}
+
+	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Door",
+		Time:          time.Now(),
+		Type_of_event: "Close the door",
+	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Door closed successfully"})
 }
@@ -444,4 +504,34 @@ func (h UserController) updateSets(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Sets updated successfully"})
+}
+
+func (h UserController) geAlltNotifications(ctx *gin.Context) {
+	request := h.NewUserRequest()
+	userID := request.GetUserIDFromURL(ctx)
+
+	notifications, err := h.userService.GetAllNotifications(userID)
+
+	if err != nil {
+		fmt.Println("get all notifications failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get all notifications failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, notifications)
+}
+
+func (h UserController) getUnreadNotifications(ctx *gin.Context) {
+	request := h.NewUserRequest()
+	userID := request.GetUserIDFromURL(ctx)
+
+	notifications, err := h.userService.GetUnreadNotifications(userID)
+
+	if err != nil {
+		fmt.Println("get unread notifications failed:", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "get unread notifications failed", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, notifications)
 }

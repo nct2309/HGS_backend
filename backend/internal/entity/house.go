@@ -17,8 +17,8 @@ type ActivityLog struct {
 }
 
 type FaceEncoding struct {
-	Face_encoding string `gorm:"primaryKey;column:face_encoding" json:"face_encoding"`
-	House_id      int    `gorm:"foreignKey:house_id" json:"house_id"`
+	Face_encoding string `gorm:"primaryKey;column:Face_encoding" json:"face_encoding"`
+	House_id      int    `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
 }
 
 //Set and house setting???

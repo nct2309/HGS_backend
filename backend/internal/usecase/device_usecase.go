@@ -15,6 +15,8 @@ type DeviceUsecase interface {
 	UpdateHumidity(id int, humid float64) error
 	UpdateFanSpeed(id int, speed int) error
 	UpdateDevice(houseID int, deviceID int, deviceType string, data float64, state bool) error
+	UpdateFaceEncodings(houseID int, faceEncode string) error
+	GetFaceEncoding(houseID int) ([]string, error)
 }
 
 type deviceUsecase struct {
@@ -35,4 +37,12 @@ func (s *deviceUsecase) UpdateFanSpeed(id int, speed int) error {
 
 func (s *deviceUsecase) UpdateDevice(houseID int, deviceID int, deviceType string, data float64, state bool) error {
 	return s.deviceRepo.UpdateDevice(houseID, deviceID, deviceType, data, state)
+}
+
+func (s *deviceUsecase) UpdateFaceEncodings(houseID int, faceEncode string) error {
+	return s.deviceRepo.UpdateFaceEncodings(houseID, faceEncode)
+}
+
+func (s *deviceUsecase) GetFaceEncoding(houseID int) ([]string, error) {
+	return s.deviceRepo.GetFaceEncoding(houseID)
 }

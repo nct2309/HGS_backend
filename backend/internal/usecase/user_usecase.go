@@ -28,6 +28,10 @@ type UserUsecase interface {
 	UpdateDeviceData(deviceID int, data float64, house_id int, setting string) error
 	UpdataDeviceState(deviceID int, state bool, house_id int, setting string) error
 	UpdateManySets([]entity.Set) error
+	GetAllNotifications(userID int) ([]entity.Notification, error)
+	GetUnreadNotifications(userID int) ([]entity.Notification, error)
+	// CreateNotification(userID int, houseId int, notification *entity.Notification) error
+	CreateActivityLog(*entity.ActivityLog) error
 }
 
 type userUsecase struct {
@@ -117,4 +121,20 @@ func (s *userUsecase) UpdateManySets(sets []entity.Set) error {
 	// loop through the sets and update each set
 	s.userRepo.UpdateManySets(sets)
 	return nil
+}
+
+func (s *userUsecase) GetAllNotifications(userID int) ([]entity.Notification, error) {
+	return s.userRepo.GetAllNotifications(userID)
+}
+
+func (s *userUsecase) GetUnreadNotifications(userID int) ([]entity.Notification, error) {
+	return s.userRepo.GetUnreadNotifications(userID)
+}
+
+// func (s *userUsecase) CreateNotification(userID int, houseId int, notification *entity.Notification) error {
+// 	return s.userRepo.CreateNotification(userID, houseId, notification)
+// }
+
+func (s *userUsecase) CreateActivityLog(activityLog *entity.ActivityLog) error {
+	return s.userRepo.CreateActivityLog(activityLog)
 }

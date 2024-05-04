@@ -23,6 +23,7 @@ type UserRequest interface {
 	GetIDFromURL(c *gin.Context) string
 	GetUsername() string
 	GetPassword() string
+	GetUserIDFromURL(ctx *gin.Context) int
 	GetHouseIDFromURL(ctx *gin.Context) int
 	GetHouseSettingNameFromURL(ctx *gin.Context) string
 	GetLightLevel(ctx *gin.Context) (float64, error)
@@ -78,6 +79,13 @@ func (r *userRequest) GetPassword() string {
 	password = strings.ReplaceAll(password, "--", "\\--")
 
 	return password
+}
+
+// user_id=1
+func (r *userRequest) GetUserIDFromURL(ctx *gin.Context) int {
+	userID, _ := ctx.GetQuery("user_id")
+	user_id, _ := strconv.Atoi(userID)
+	return user_id
 }
 
 // /users/getHouseSettingByHouseID?house_id=1

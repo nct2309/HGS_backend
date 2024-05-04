@@ -24,9 +24,10 @@ type Own struct { // More descriptive name
 
 type Notification struct {
 	ID          int       `gorm:"primaryKey;column:Notification_id" json:"notification_id"`
-	Description string    `gorm:"description" json:"description"`
-	Time        time.Time `gorm:"time" json:"time"` //3/25/2024 5:06:00 PM
-	Title       string    `gorm:"title" json:"title"`
+	Description string    `gorm:"Description" json:"description"`
+	Time        time.Time `gorm:"Time" json:"time"` //3/25/2024 5:06:00 PM
+	Title       string    `gorm:"Title" json:"title"`
+	Read        bool      `gorm:"Read" json:"read"`
 }
 
 type Send struct {

@@ -11,6 +11,8 @@ type DeviceRepository interface {
 	UpdateHumidity(id int, humid float64) error
 	UpdateFanSpeed(id int, speed int) error
 	UpdateDevice(houseID int, deviceID int, deviceType string, data float64, state bool) error
+	UpdateFaceEncodings(houseID int, faceEncode string) error
+	GetFaceEncoding(houseID int) ([]string, error)
 }
 
 type deviceRepository struct {
@@ -78,4 +80,34 @@ func (r *deviceRepository) UpdateDevice(houseID int, deviceID int, deviceType st
 		return err
 	}
 	return tx.Commit().Error
+}
+
+// type FaceEncoding struct {
+// 	Face_encoding string `gorm:"primaryKey;column:Face_encoding" json:"face_encoding"`
+// 	House_id      int    `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
+// }
+
+func (r *deviceRepository) UpdateFaceEncodings(houseID int, faceEncode string) error {
+	// the combination of both face_encode and house_id is primary key
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if err := tx.Table("Face_encoding").Create(map[string]interface{}{
+		"Face_encoding": faceEncode,
+		"House_id":      houseID,
+	}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
+func (r *deviceRepository) GetFaceEncoding(houseID int) ([]string, error) {
+	// get the face_encodings of the house (know that there is one it is NULL convert to empty string)
+	var faceEncodings []string
+	if err := r.db.Table("Face_encoding").Where("House_id = ? AND Face_encoding IS NOT NULL", houseID).Pluck("Face_encoding", &faceEncodings).Error; err != nil {
+		return nil, err
+	}
+	return faceEncodings, nil
 }
