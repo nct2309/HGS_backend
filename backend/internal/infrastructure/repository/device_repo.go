@@ -1,6 +1,7 @@
 package repository
 
 import (
+	entity "go-jwt/internal/entity"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,6 +14,7 @@ type DeviceRepository interface {
 	UpdateDevice(houseID int, deviceID int, deviceType string, data float64, state bool) error
 	UpdateFaceEncodings(houseID int, faceEncode string) error
 	GetFaceEncoding(houseID int) ([]string, error)
+	CreateActivityLog(activityLog *entity.ActivityLog) error
 }
 
 type deviceRepository struct {
@@ -105,4 +107,12 @@ func (r *deviceRepository) GetFaceEncoding(houseID int) ([]string, error) {
 		return nil, err
 	}
 	return faceEncodings, nil
+}
+
+func (d *deviceRepository) CreateActivityLog(activityLog *entity.ActivityLog) error {
+	err := d.db.Table("Activity_log").Create(activityLog).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

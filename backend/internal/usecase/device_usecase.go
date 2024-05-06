@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"bytes"
+	entity "go-jwt/internal/entity"
 	repository "go-jwt/internal/infrastructure/repository"
 	external "go-jwt/internal/usecase/external"
 )
@@ -21,6 +22,8 @@ type DeviceUsecase interface {
 	GetFaceEncoding(houseID int) ([]string, error)
 	EncodeFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error
 	VerifyFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error
+	OpenDoorAfterFaceVerified(houseID int) error
+	CreateActivityLog(*entity.ActivityLog) error
 }
 
 type deviceUsecase struct {
@@ -57,4 +60,12 @@ func (s *deviceUsecase) EncodeFace(houseID int, formData *bytes.Buffer, ContentT
 
 func (s *deviceUsecase) VerifyFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error {
 	return external.NewExternalServiceAdapter(&external.FaceRecognitionService{}).Execute(&external.VerifyFace{FormData: formData, ContentType: ContentType}, data)
+}
+
+func (s *deviceUsecase) OpenDoorAfterFaceVerified(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.DoorOpen{}, nil)
+}
+
+func (s *deviceUsecase) CreateActivityLog(activityLog *entity.ActivityLog) error {
+	return s.deviceRepo.CreateActivityLog(activityLog)
 }

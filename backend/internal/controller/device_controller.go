@@ -3,12 +3,14 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
+	"go-jwt/internal/entity"
 	"go-jwt/internal/middleware"
 	request "go-jwt/internal/request"
 	usecase "go-jwt/internal/usecase"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -294,6 +296,19 @@ func (h DeviceController) VerifyFace(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": errorMessage})
 		return
 	}
+
+	err = h.deviceService.OpenDoorAfterFaceVerified(1)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open the door"})
+		return
+	}
+
+	_ = h.deviceService.CreateActivityLog(&entity.ActivityLog{
+		House_id:      1,
+		Device:        "Door",
+		Time:          time.Now(),
+		Type_of_event: "Open the door after face verified",
+	})
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Face verified successfully", "is_match": isMatch})
 }
