@@ -53,7 +53,7 @@ func SetupUserRoutes(router *gin.Engine, userService usecase.UserUsecase) {
 		userRoutes.GET("/getActivityLog", userController.getActivityLogByHouseID)
 		userRoutes.POST("/updateSets", userController.updateSets)
 		// notifications
-		userRoutes.GET("/getAllNotifications", userController.geAlltNotifications)
+		userRoutes.GET("/getAllNotifications", userController.getAlltNotifications)
 		userRoutes.GET("/getUnreadNotifications", userController.getUnreadNotifications)
 	}
 }
@@ -102,17 +102,9 @@ func (h UserController) get(ctx *gin.Context) {
 
 func (h UserController) turnOnLight(ctx *gin.Context) {
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/Ye9oEbz9VvPgzjLYzjz7dDC8R1dL"
-
-	jsonData := map[string]string{
-		"value": "Alarm On",
-	}
-
-	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.TurnOnLight(1)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -128,18 +120,9 @@ func (h UserController) turnOnLight(ctx *gin.Context) {
 
 func (h UserController) turnOffLight(ctx *gin.Context) {
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/Ye9oEbz9VvPgzjLYzjz7dDC8R1dL"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": "Alarm Off",
-	}
-
-	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.TurnOffLight(1)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -159,21 +142,13 @@ func (h UserController) updateLightLevel(ctx *gin.Context) {
 	light_level, e := request.GetLightLevel(ctx)
 
 	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
 		return
 	}
 
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/YUgssBNR6j1J24jF6RDYG71QqH4c"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": strconv.FormatFloat(light_level, 'f', -1, 64),
-	}
-
-	e = request.SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.UpdateLightLevel(1, light_level)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -192,22 +167,13 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 	fan_speed, e := request.GetFanSpeed(ctx)
 
 	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
 		return
 	}
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/GDfmkBYDyWBUV6A6M17stLHytSEM"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": strconv.FormatFloat(fan_speed, 'f', -1, 64),
-	}
-
-	e = request.SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.UpdateFanSpeed(1, fan_speed)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -223,18 +189,9 @@ func (h UserController) updateFanSpeed(ctx *gin.Context) {
 
 func (h UserController) turnOnFan(ctx *gin.Context) {
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": "Fan On",
-	}
-
-	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.TurnOnFan(1)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -250,18 +207,9 @@ func (h UserController) turnOnFan(ctx *gin.Context) {
 
 func (h UserController) turnOffFan(ctx *gin.Context) {
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/9xJ4R9ZM7A9tKEeJcaJh9rS7t6L5"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": "Fan Off",
-	}
-
-	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.TurnOffFan(1)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -277,18 +225,9 @@ func (h UserController) turnOffFan(ctx *gin.Context) {
 
 func (h UserController) openDoor(ctx *gin.Context) {
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/iMQFZUbNRJPM5ZCzRN4ped6GbL4W"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": "Open Door",
-	}
-
-	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.OpenDoor(1)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -304,18 +243,9 @@ func (h UserController) openDoor(ctx *gin.Context) {
 
 func (h UserController) closeDoor(ctx *gin.Context) {
 
-	// Build the API endpoint URL
-	baseURL := "https://io.adafruit.com/api/v2/webhooks/feed/iMQFZUbNRJPM5ZCzRN4ped6GbL4W"
-
-	// Create the data you want to send
-	jsonData := map[string]string{
-		"value": "Close Door",
-	}
-
-	e := h.NewUserRequest().SendDataToAdafruit(baseURL, jsonData)
-
-	if e != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e})
+	err := h.userService.CloseDoor(1)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
@@ -403,7 +333,20 @@ func (h UserController) getDashboardData(ctx *gin.Context) {
 
 	temperature, _ := strconv.ParseFloat(res["temperature"], 64)
 	humidity, _ := strconv.ParseFloat(res["humidity"], 64)
-
+	//temp >= 40 và humid <= 15 thì notify
+	if temperature >= 40 && humidity <= 15 {
+		err := h.userService.CreateNotification(1, 1, &entity.Notification{
+			Time:        time.Now(),
+			Title:       "Fire Warning!",
+			Description: "Temperature: " + res["temperature"] + "°C, Humidity: " + res["humidity"] + "%",
+			Read:        false,
+		})
+		if err != nil {
+			fmt.Println("create notification failed:", err.Error())
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "create notification failed", "error": err.Error()})
+			return
+		}
+	}
 	var light bool
 	if res["light"] == "Alarm On" {
 		light = true
@@ -506,7 +449,7 @@ func (h UserController) updateSets(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Sets updated successfully"})
 }
 
-func (h UserController) geAlltNotifications(ctx *gin.Context) {
+func (h UserController) getAlltNotifications(ctx *gin.Context) {
 	request := h.NewUserRequest()
 	userID := request.GetUserIDFromURL(ctx)
 

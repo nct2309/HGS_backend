@@ -1,7 +1,9 @@
 package usecase
 
 import (
+	"bytes"
 	repository "go-jwt/internal/infrastructure/repository"
+	external "go-jwt/internal/usecase/external"
 )
 
 func NewDeviceUsecase(deviceRepo repository.DeviceRepository) DeviceUsecase {
@@ -17,6 +19,8 @@ type DeviceUsecase interface {
 	UpdateDevice(houseID int, deviceID int, deviceType string, data float64, state bool) error
 	UpdateFaceEncodings(houseID int, faceEncode string) error
 	GetFaceEncoding(houseID int) ([]string, error)
+	EncodeFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error
+	VerifyFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error
 }
 
 type deviceUsecase struct {
@@ -45,4 +49,12 @@ func (s *deviceUsecase) UpdateFaceEncodings(houseID int, faceEncode string) erro
 
 func (s *deviceUsecase) GetFaceEncoding(houseID int) ([]string, error) {
 	return s.deviceRepo.GetFaceEncoding(houseID)
+}
+
+func (s *deviceUsecase) EncodeFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error {
+	return external.NewExternalServiceAdapter(&external.FaceRecognitionService{}).Execute(&external.EncodeFace{FormData: formData, ContentType: ContentType}, data)
+}
+
+func (s *deviceUsecase) VerifyFace(houseID int, formData *bytes.Buffer, ContentType string, data *map[string]interface{}) error {
+	return external.NewExternalServiceAdapter(&external.FaceRecognitionService{}).Execute(&external.VerifyFace{FormData: formData, ContentType: ContentType}, data)
 }

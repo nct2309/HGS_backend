@@ -82,11 +82,6 @@ func (r *deviceRepository) UpdateDevice(houseID int, deviceID int, deviceType st
 	return tx.Commit().Error
 }
 
-// type FaceEncoding struct {
-// 	Face_encoding string `gorm:"primaryKey;column:Face_encoding" json:"face_encoding"`
-// 	House_id      int    `gorm:"primaryKey;foreignKey:House_id" json:"house_id"`
-// }
-
 func (r *deviceRepository) UpdateFaceEncodings(houseID int, faceEncode string) error {
 	// the combination of both face_encode and house_id is primary key
 	tx := r.db.Begin()

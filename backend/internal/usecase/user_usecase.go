@@ -4,6 +4,7 @@ import (
 	entity "go-jwt/internal/entity"
 	repository "go-jwt/internal/infrastructure/repository"
 	"go-jwt/internal/middleware/token"
+	external "go-jwt/internal/usecase/external"
 	"strconv"
 	"strings"
 )
@@ -30,8 +31,16 @@ type UserUsecase interface {
 	UpdateManySets([]entity.Set) error
 	GetAllNotifications(userID int) ([]entity.Notification, error)
 	GetUnreadNotifications(userID int) ([]entity.Notification, error)
-	// CreateNotification(userID int, houseId int, notification *entity.Notification) error
+	CreateNotification(userID int, houseId int, notification *entity.Notification) error
 	CreateActivityLog(*entity.ActivityLog) error
+	TurnOnLight(houseID int) error
+	TurnOffLight(houseID int) error
+	TurnOnFan(houseID int) error
+	TurnOffFan(houseID int) error
+	OpenDoor(houseID int) error
+	CloseDoor(houseID int) error
+	UpdateLightLevel(houseID int, lightLevel float64) error
+	UpdateFanSpeed(houseID int, fanSpeed float64) error
 }
 
 type userUsecase struct {
@@ -131,10 +140,42 @@ func (s *userUsecase) GetUnreadNotifications(userID int) ([]entity.Notification,
 	return s.userRepo.GetUnreadNotifications(userID)
 }
 
-// func (s *userUsecase) CreateNotification(userID int, houseId int, notification *entity.Notification) error {
-// 	return s.userRepo.CreateNotification(userID, houseId, notification)
-// }
+func (s *userUsecase) CreateNotification(userID int, houseId int, notification *entity.Notification) error {
+	return s.userRepo.CreateNotification(userID, houseId, notification)
+}
 
 func (s *userUsecase) CreateActivityLog(activityLog *entity.ActivityLog) error {
 	return s.userRepo.CreateActivityLog(activityLog)
+}
+
+func (s *userUsecase) TurnOnLight(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.LightOn{}, nil)
+}
+
+func (s *userUsecase) TurnOffLight(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.LightOff{}, nil)
+}
+
+func (s *userUsecase) TurnOnFan(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.FanOn{}, nil)
+}
+
+func (s *userUsecase) TurnOffFan(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.FanOff{}, nil)
+}
+
+func (s *userUsecase) OpenDoor(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.DoorOpen{}, nil)
+}
+
+func (s *userUsecase) CloseDoor(houseID int) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.DoorClose{}, nil)
+}
+
+func (s *userUsecase) UpdateLightLevel(houseID int, lightLevel float64) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.LightLevel{LightLevel: lightLevel}, nil)
+}
+
+func (s *userUsecase) UpdateFanSpeed(houseID int, fanSpeed float64) error {
+	return external.NewExternalServiceAdapter(&external.AdaFruitService{}).Execute(&external.FanSpeed{FanSpeed: fanSpeed}, nil)
 }
