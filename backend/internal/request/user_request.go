@@ -121,7 +121,7 @@ func (r *userRequest) GetLightLevel(ctx *gin.Context) (float64, error) {
 	}
 
 	// light_level has to be in 1, 2, 3 and 4.
-	if !(light_level == 1 || light_level == 2 || light_level == 3 || light_level == 4) {
+	if !(light_level == 0 || light_level == 1 || light_level == 2 || light_level == 3 || light_level == 4) {
 		return 0, errors.New("invalid 'light_level' value. Must be 1, 2, 3 or 4")
 	}
 

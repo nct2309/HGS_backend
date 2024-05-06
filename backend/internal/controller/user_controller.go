@@ -212,7 +212,6 @@ func (h UserController) turnOffFan(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
-
 	_ = h.userService.CreateActivityLog(&entity.ActivityLog{
 		House_id:      1,
 		Device:        "Fan",
